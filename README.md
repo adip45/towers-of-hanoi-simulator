@@ -1,5 +1,19 @@
 TOWERS OF HANOI — DATA STRUCTURES MINI PROJECT
 
+# Towers of Hanoi Simulator
+
+An interactive Data Structures mini project using recursion.
+
+## 🚀 Live Demo
+
+[Click here to play the Towers of Hanoi Simulator](https://adip45.github.io/towers-of-hanoi-simulator/)
+
+## Features
+- Interactive disk movement
+- Step-by-step simulation
+- Automatic solving using recursion
+- Minimum move counter
+
 FILES
 1. towers_of_hanoi_simulator.html
    Interactive visual simulator. Open it directly in Google Chrome, Microsoft Edge,
