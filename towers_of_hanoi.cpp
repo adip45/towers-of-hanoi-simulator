@@ -1,98 +1,98 @@
 #include <iostream>
-#include <vector>
-#include <string>
-#include <limits>
 using namespace std;
 
-// The three rods are represented as stacks (vectors).
-vector<int> rods[3];
-const char rodName[] = {'A', 'B', 'C'};
-long long moveCount = 0;
-bool stepByStep = false;
+int rods[3][8];
+int count[3] = {0, 0, 0};
+char name[3] = {'A', 'B', 'C'};
+int moves = 0;
+int mode;
 
-void displayRods(int n) {
-    cout << "\n";
-    for (int height = n - 1; height >= 0; --height) {
-        for (int r = 0; r < 3; ++r) {
-            if (height < static_cast<int>(rods[r].size())) {
-                int disk = rods[r][height];
-                cout << string(n - disk, ' ')
-                     << string(2 * disk + 1, '=')
-                     << string(n - disk, ' ');
-            } else {
-                cout << string(n, ' ') << '|' << string(n, ' ');
-            }
-            cout << "   ";
-        }
-        cout << '\n';
-    }
-    for (int r = 0; r < 3; ++r) {
-        cout << string(n, ' ') << rodName[r] << string(n, ' ') << "   ";
-    }
-    cout << "\n";
+void print(char c, int times) {
+    for (int i = 0; i < times; i++)
+        cout << c;
 }
 
-void moveDisk(int source, int destination, int n) {
-    int disk = rods[source].back();
-    rods[source].pop_back();
-    rods[destination].push_back(disk);
-    ++moveCount;
+void display(int n) {
+    cout << endl;
+    for (int h = n - 1; h >= 0; h--) {
+        for (int r = 0; r < 3; r++) {
+            if (h < count[r]) {
+                int d = rods[r][h];
+                print(' ', n - d);
+                print('=', 2 * d + 1);
+                print(' ', n - d);
+            } else {
+                print(' ', n);
+                cout << '|';
+                print(' ', n);
+            }
+            print(' ', 3);
+        }
+        cout << endl;
+    }
+    for (int r = 0; r < 3; r++) {
+        print(' ', n);
+        cout << name[r];
+        print(' ', n);
+        print(' ', 3);
+    }
+    cout << endl;
+}
 
-    cout << "Move " << moveCount << ": Disk " << disk
-         << " from " << rodName[source]
-         << " to " << rodName[destination] << '\n';
-    displayRods(n);
-
-    if (stepByStep) {
+void moveDisk(int from, int to, int total) {
+    int d = rods[from][count[from] - 1];
+    count[from]--;
+    rods[to][count[to]] = d;
+    count[to]++;
+    moves++;
+    cout << "Move " << moves << ": Disk " << d << " from " << name[from] << " to " << name[to] << endl;
+    display(total);
+    if (mode == 2) {
         cout << "Press Enter for the next move...";
         cin.get();
     }
 }
 
-// Recursive Towers of Hanoi solution.
-void solveHanoi(int n, int source, int auxiliary,
-                int destination, int totalDisks) {
-    if (n == 1) { // Base case
-        moveDisk(source, destination, totalDisks);
+void hanoi(int n, int from, int aux, int to, int total) {
+    if (n == 1) {
+        moveDisk(from, to, total);
         return;
     }
-
-    solveHanoi(n - 1, source, destination, auxiliary, totalDisks);
-    moveDisk(source, destination, totalDisks);
-    solveHanoi(n - 1, auxiliary, source, destination, totalDisks);
+    hanoi(n - 1, from, to, aux, total);
+    moveDisk(from, to, total);
+    hanoi(n - 1, aux, from, to, total);
 }
 
 int main() {
-    cout << "=== TOWERS OF HANOI: C++ DATA STRUCTURES PROJECT ===\n";
+    cout << "=== TOWERS OF HANOI ===" << endl;
     int n;
     cout << "Enter number of disks (1-8): ";
-    if (!(cin >> n) || n < 1 || n > 8) {
-        cout << "Invalid input. Enter a whole number from 1 to 8.\n";
+    cin >> n;
+    if (n < 1 || n > 8) {
+        cout << "Invalid input. Enter a number from 1 to 8." << endl;
         return 1;
     }
-
-    int mode;
     cout << "Choose mode: 1. Automatic  2. Step by step: ";
-    if (!(cin >> mode) || (mode != 1 && mode != 2)) {
-        cout << "Invalid mode. Choose 1 or 2.\n";
+    cin >> mode;
+    if (mode != 1 && mode != 2) {
+        cout << "Invalid mode. Choose 1 or 2." << endl;
         return 1;
     }
-    stepByStep = (mode == 2);
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-
-    for (int disk = n; disk >= 1; --disk) {
-        rods[0].push_back(disk);
+    cin.ignore();
+    for (int d = n; d >= 1; d--) {
+        rods[0][count[0]] = d;
+        count[0]++;
     }
-
-    cout << "\nInitial arrangement (all disks on rod A):\n";
-    displayRods(n);
-    solveHanoi(n, 0, 1, 2, n);
-
-    cout << "Puzzle solved!\n";
-    cout << "Moves performed: " << moveCount << '\n';
-    cout << "Minimum moves: 2^" << n << " - 1 = "
-         << ((1LL << n) - 1) << '\n';
-    cout << "Time complexity: O(2^n)\n";
-    cout << "Auxiliary recursion-stack space: O(n)\n";
+    cout << "\nInitial arrangement:" << endl;
+    display(n);
+    hanoi(n, 0, 1, 2, n);
+    int minMoves = 1;
+    for (int i = 0; i < n; i++)
+        minMoves = minMoves * 2;
+    minMoves = minMoves - 1;
+    cout << "Puzzle solved!" << endl;
+    cout << "Moves performed: " << moves << endl;
+    cout << "Minimum moves: " << minMoves << endl;
+    cout << "Time complexity: O(2^n)" << endl;
     return 0;
 }
