@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Towers of Hanoi — Interactive Simulator</title>
+<style>
+  :root {
+    --bg: #f3f6fb;
+    --panel: #ffffff;
+    --ink: #18243a;
+    --muted: #64748b;
+    --line: #e4eaf2;
+    --blue: #3459e6;
+    --blue-dark: #2442bd;
+    --green: #18856b;
+    --soft-blue: #edf2ff;
+    --shadow: 0 14px 40px rgba(30, 49, 89, .07);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 15% 0%, #eaf0ff 0, transparent 28%), var(--bg);
+    color: var(--ink);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  button, select, input { font: inherit; }
+  .shell { max-width: 1240px; padding: 28px 24px 38px; margin: 0 auto; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: white; background: linear-gradient(145deg, #4168f2, #293eb0); box-shadow: 0 8px 18px rgba(52,89,230,.25); font-weight: 800; font-size: 17px; }
+  .brand-name { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+  .brand-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tag { color: #3452c5; background: #e8edff; border: 1px solid #d7e0ff; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .1em; padding: 9px 12px; white-space: nowrap; }
+  .hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .15em; font-weight: 800; color: var(--blue); font-size: 11px; margin: 0 0 9px; }
+  h1 { margin: 0; letter-spacing: -.055em; line-height: 1.04; font-size: clamp(32px, 4vw, 48px); }
+  .hero p { margin: 12px 0 0; max-width: 660px; color: var(--muted); line-height: 1.65; font-size: 14px; }
+  .hero-note { border-left: 3px solid #91a7ff; padding: 5px 0 5px 14px; max-width: 220px; color: #52617b; font-size: 12px; line-height: 1.55; }
+  .hero-note strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 2px; }
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+  .metric { background: rgba(255,255,255,.86); border: 1px solid var(--line); border-radius: 16px; padding: 17px 19px; box-shadow: 0 5px 18px rgba(30,49,89,.025); }
+  .metric-label { color: var(--muted); font-size: 12px; font-weight: 650; }
+  .metric-value { font-size: 27px; font-weight: 800; letter-spacing: -.045em; margin-top: 4px; }
+  .metric-foot { color: #8190a6; font-size: 11px; margin-top: 2px; }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(270px, .78fr); gap: 18px; align-items: stretch; }
+  .panel { min-width: 0; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 19px 21px; border-bottom: 1px solid var(--line); }
+  .panel-title { font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+  .panel-sub { margin-top: 4px; font-size: 12px; color: var(--muted); }
+  .live-status { display: inline-flex; align-items: center; gap: 7px; color: #15765f; background: #e9f8f2; border: 1px solid #d3f0e5; border-radius: 999px; padding: 7px 10px; font-size: 11px; font-weight: 750; white-space: nowrap; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #16a579; }
+  .stage-wrap { padding: 10px 18px 0; }
+  .stage { height: 340px; position: relative; overflow: hidden; border-radius: 15px; background: linear-gradient(180deg, #f8faff 0%, #f0f4fc 100%); border: 1px solid #ebeff8; }
+  .stage:before { content: "SIMULATION CANVAS"; position: absolute; top: 14px; left: 16px; color: #a1acc0; font-size: 9px; font-weight: 800; letter-spacing: .15em; }
+  .rod { position: absolute; width: 7px; height: 218px; bottom: 40px; border-radius: 8px 8px 2px 2px; background: linear-gradient(90deg, #9aa8c4, #d5ddec, #9eacc8); box-shadow: 1px 0 2px rgba(40,55,87,.07); transform: translateX(-50%); }
+  .base { position: absolute; height: 9px; bottom: 32px; transform: translateX(-50%); border-radius: 8px; background: linear-gradient(180deg, #bbc6da, #95a5c2); box-shadow: 0 3px 0 rgba(67,84,120,.08); }
+  .rod-label { position: absolute; bottom: 8px; transform: translateX(-50%); font-size: 11px; font-weight: 850; color: #62718b; letter-spacing: .08em; }
+  .disk { position: absolute; height: 20px; border-radius: 7px 7px 5px 5px; display: flex; justify-content: center; align-items: center; color: rgba(255,255,255,.96); font-size: 10px; font-weight: 850; text-shadow: 0 1px 2px rgba(20,30,60,.15); border: 1px solid rgba(255,255,255,.38); box-shadow: inset 0 2px 0 rgba(255,255,255,.22), 0 3px 5px rgba(35,53,94,.12); will-change: left, bottom; }
+  .disk-1 { background: linear-gradient(135deg, #ff9b72, #e76851); }
+  .disk-2 { background: linear-gradient(135deg, #f9c45e, #dd902b); }
+  .disk-3 { background: linear-gradient(135deg, #64cdb1, #1b9c86); }
+  .disk-4 { background: linear-gradient(135deg, #68b8f8, #397bd7); }
+  .disk-5 { background: linear-gradient(135deg, #9e9bff, #6b63e9); }
+  .disk-6 { background: linear-gradient(135deg, #d49af3, #a05ad5); }
+  .disk-7 { background: linear-gradient(135deg, #f28db4, #d94e86); }
+  .disk-8 { background: linear-gradient(135deg, #94a3b8, #64748b); }
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 16px 18px 19px; }
+  .btn { border: 1px solid transparent; border-radius: 11px; padding: 10px 13px; cursor: pointer; font-size: 12px; font-weight: 800; transition: transform .15s, background .15s, box-shadow .15s; }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .btn:disabled { opacity: .42; cursor: not-allowed; }
+  .btn-primary { background: var(--blue); color: white; box-shadow: 0 5px 12px rgba(52,89,230,.18); }
+  .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+  .btn-secondary { background: #f2f5fb; color: #35445e; border-color: #e3e9f3; }
+  .btn-quiet { background: white; color: #62718b; border-color: #e5eaf2; }
+  .control-divider { width: 1px; height: 28px; background: var(--line); margin: 0 2px; }
+  .control-label { color: var(--muted); font-size: 11px; font-weight: 750; }
+  .select { border: 1px solid #dfe6f1; background: #fff; color: var(--ink); border-radius: 10px; padding: 9px 10px; font-size: 12px; font-weight: 750; outline: none; }
+  .speed-control { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  input[type="range"] { width: 83px; accent-color: var(--blue); cursor: pointer; }
+  .speed-value { font-size: 11px; color: var(--muted); min-width: 31px; }
+  .side-content { padding: 18px; }
+  .next-card { border: 1px solid #dce5ff; border-radius: 15px; background: linear-gradient(145deg, #f2f5ff, #fbfcff); padding: 16px; margin-bottom: 18px; }
+  .section-label { color: #7b8aa3; font-size: 10px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+  .next-move { font-size: 19px; font-weight: 850; letter-spacing: -.035em; margin-top: 10px; line-height: 1.3; }
+  .next-detail { color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.55; }
+  .progress-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 9px; }
+  .progress-text { color: var(--muted); font-size: 11px; font-weight: 700; }
+  .progress-track { height: 7px; border-radius: 20px; background: #edf1f8; overflow: hidden; }
+  .progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #5977f2, #37b99b); border-radius: inherit; transition: width .2s ease; }
+  .history-title { display: flex; justify-content: space-between; align-items: center; margin: 22px 0 10px; }
+  .history-count { color: #8592a8; font-size: 10px; font-weight: 750; }
+  .history { display: grid; gap: 7px; min-height: 90px; }
+  .history-row { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border: 1px solid #edf0f6; border-radius: 10px; background: #fcfdff; font-size: 11px; color: #53627b; }
+  .history-num { display: grid; place-items: center; flex: 0 0 24px; height: 24px; background: #eef2ff; color: #405bd0; border-radius: 7px; font-weight: 850; }
+  .history-row strong { color: #29364e; }
+  .empty-history { padding: 18px 10px; text-align: center; color: #9aa6b8; font-size: 12px; border: 1px dashed #e1e7f0; border-radius: 10px; }
+  .bottom-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; margin-top: 18px; }
+  .info-panel { background: white; border: 1px solid var(--line); border-radius: 18px; padding: 19px 21px; }
+  .info-panel h2 { font-size: 14px; letter-spacing: -.02em; margin: 0 0 12px; }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+  .step { border-top: 2px solid #dfe6ff; padding-top: 10px; }
+  .step-num { font-size: 10px; font-weight: 850; color: var(--blue); letter-spacing: .1em; }
+  .step strong { display: block; font-size: 12px; margin: 5px 0 4px; }
+  .step p { font-size: 11px; line-height: 1.55; color: var(--muted); margin: 0; }
+  .formula { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f3f6ff; border: 1px solid #e2e9ff; border-radius: 12px; padding: 14px; color: #3046ad; font-weight: 800; font-size: 19px; text-align: center; margin: 10px 0; }
+  .complexity { font-size: 11px; line-height: 1.6; color: var(--muted); }
+  .complexity strong { color: #2b3952; }
+  .footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 19px; padding: 0 3px; font-size: 10px; color: #8b98ad; }
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; }
+    .hero-note { display: none; }
+    .bottom-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .shell { padding: 17px 12px 26px; }
+    .tag { font-size: 9px; padding: 7px 9px; }
+    .hero { margin-bottom: 17px; }
+    .metrics { gap: 7px; }
+    .metric { padding: 12px 10px; border-radius: 12px; }
+    .metric-value { font-size: 21px; }
+    .metric-label, .metric-foot { font-size: 10px; }
+    .panel-head { padding: 15px; }
+    .stage-wrap { padding: 9px 8px 0; }
+    .stage { height: 300px; }
+    .rod { height: 190px; }
+    .controls { padding: 13px 10px 15px; gap: 7px; }
+    .btn { padding: 9px 10px; font-size: 11px; }
+    .speed-control { width: 100%; margin: 4px 0 0; }
+    input[type="range"] { flex: 1; }
+    .side-content { padding: 13px; }
+    .steps { gap: 9px; }
+    .info-panel { padding: 16px; }
+    .step p { font-size: 10px; }
+    .footer { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">H</div>
+      <div>
+        <div class="brand-name">DS LAB <span style="color:#8190a6;font-weight:600">/ SIMULATOR</span></div>
+        <div class="brand-sub">Interactive algorithm visualizer</div>
+      </div>
+    </div>
+    <div class="tag">DATA STRUCTURES MINI PROJECT</div>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Recursion · Stack operations · Algorithm visualization</div>
+      <h1>Towers of Hanoi</h1>
+      <p>Explore how recursion solves the classic disk-moving puzzle. Choose the number of disks, step through each move, or watch the complete solution play automatically.</p>
+    </div>
+    <div class="hero-note"><strong>Learning objective</strong>Move every disk from rod A to rod C without placing a larger disk on a smaller one.</div>
+  </section>
+
+  <section class="metrics" aria-label="Project metrics">
+    <div class="metric"><div class="metric-label">Number of disks</div><div class="metric-value" id="metricDisks">3</div><div class="metric-foot">Currently selected</div></div>
+    <div class="metric"><div class="metric-label">Moves completed</div><div class="metric-value" id="metricMoves">0</div><div class="metric-foot">Of the minimum required moves</div></div>
+    <div class="metric"><div class="metric-label">Minimum moves</div><div class="metric-value" id="metricMinimum">7</div><div class="metric-foot">For an optimal solution</div></div>
+  </section>
+
+  <main class="workspace">
+    <section class="panel">
+      <div class="panel-head">
+        <div><div class="panel-title">Puzzle workspace</div><div class="panel-sub">Three rods · One disk per move</div></div>
+        <div class="live-status" id="statusPill"><span class="live-dot"></span><span id="statusText">Ready to start</span></div>
+      </div>
+      <div class="stage-wrap"><div class="stage" id="stage" aria-label="Towers of Hanoi animation canvas"></div></div>
+      <div class="controls">
+        <span class="control-label">DISKS</span>
+        <select id="diskSelect" class="select" aria-label="Number of disks">
+          <option value="1">1 disk</option><option value="2">2 disks</option><option value="3" selected>3 disks</option><option value="4">4 disks</option><option value="5">5 disks</option><option value="6">6 disks</option><option value="7">7 disks</option><option value="8">8 disks</option>
+        </select>
+        <button class="btn btn-secondary" id="newGameBtn">New game</button>
+        <span class="control-divider"></span>
+        <button class="btn btn-primary" id="playBtn">▶ Play</button>
+        <button class="btn btn-secondary" id="stepBtn">Next move →</button>
+        <button class="btn btn-quiet" id="undoBtn">← Undo</button>
+        <button class="btn btn-quiet" id="resetBtn">Reset</button>
+        <div class="speed-control"><span class="control-label">SPEED</span><input id="speedRange" type="range" min="1" max="4" value="2" aria-label="Animation speed"/><span class="speed-value" id="speedValue">2×</span></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head"><div><div class="panel-title">Move inspector</div><div class="panel-sub">Follow the recursive solution</div></div></div>
+      <div class="side-content">
+        <div class="next-card">
+          <div class="section-label" id="moveEyebrow">UP NEXT</div>
+          <div class="next-move" id="nextMove">Disk 1: A → C</div>
+          <div class="next-detail" id="nextDetail">Start the simulation to see each disk move and the state of all three rods update.</div>
+        </div>
+        <div class="progress-head"><span class="section-label">SOLUTION PROGRESS</span><span class="progress-text" id="progressText">0 / 7 moves</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="history-title"><div class="panel-title" style="font-size:13px">Recent moves</div><div class="history-count" id="historyCount">0 recorded</div></div>
+        <div class="history" id="history"><div class="empty-history">No moves yet. Press Play or Next move.</div></div>
+      </div>
+    </aside>
+  </main>
+
+  <section class="bottom-grid">
+    <div class="info-panel">
+      <h2>How the recursive algorithm works</h2>
+      <div class="steps">
+        <div class="step"><div class="step-num">STEP 01</div><strong>Move n − 1 disks</strong><p>Move the smaller stack from the source rod to the auxiliary rod.</p></div>
+        <div class="step"><div class="step-num">STEP 02</div><strong>Move the largest disk</strong><p>Move the remaining largest disk from the source rod to the destination.</p></div>
+        <div class="step"><div class="step-num">STEP 03</div><strong>Complete the stack</strong><p>Move the smaller stack from the auxiliary rod onto the destination rod.</p></div>
+      </div>
+    </div>
+    <div class="info-panel">
+      <h2>Algorithm analysis</h2>
+      <div class="formula">T(n) = 2<sup>n</sup> − 1</div>
+      <div class="complexity"><strong>Time complexity:</strong> O(2<sup>n</sup>) because each extra disk roughly doubles the number of moves.<br/><strong>Auxiliary space:</strong> O(n) for the recursion call stack.<br/><strong>Goal:</strong> Transfer all disks from A to C in the minimum number of moves.</div>
+    </div>
+  </section>
+  <div class="footer"><span>Towers of Hanoi · Interactive Data Structures Demonstration</span><span>Built for learning recursion step by step</span></div>
+</div>
+
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const diskSelect = document.getElementById('diskSelect');
+  const playBtn = document.getElementById('playBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const speedRange = document.getElementById('speedRange');
+  const speedValue = document.getElementById('speedValue');
+
+  const BASE_BOTTOM = 40;
+  const DISK_HEIGHT = 22;
+  let diskCount = 3;
+  let rods = [[], [], []];
+  let moves = [];
+  let currentMove = 0;
+  let diskElements = {};
+  let isAnimating = false;
+  let isPlaying = false;
+  let playSession = 0;
+
+  const rodNames = ['A', 'B', 'C'];
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const animationDuration = () => Math.round(430 / Number(speedRange.value));
+
+  function makeMoves(n) {
+    const result = [];
+    function solve(count, from, auxiliary, to) {
+      if (count === 1) {
+        result.push({ disk: 1, from, to });
+        return;
+      }
+      solve(count - 1, from, to, auxiliary);
+      result.push({ disk: count, from, to });
+      solve(count - 1, auxiliary, from, to);
+    }
+    solve(n, 0, 1, 2);
+    return result;
+  }
+
+  function initialRods(n) {
+    return [Array.from({ length: n }, (_, i) => n - i), [], []];
+  }
+
+  function stateAt(step) {
+    const state = initialRods(diskCount);
+    for (let i = 0; i < step; i++) {
+      const move = moves[i];
+      const disk = state[move.from].pop();
+      state[move.to].push(disk);
+    }
+    return state;
+  }
+
+  function stageMetrics() {
+    const width = stage.clientWidth;
+    const lane = width / 3;
+    return { width, lane, centers: [lane * .5, lane * 1.5, lane * 2.5] };
+  }
+
+  function diskWidth(disk, lane) {
+    return lane * (0.36 + 0.55 * (disk / diskCount));
+  }
+
+  function placeDisk(el, disk, rod, level, transition = false) {
+    const { lane, centers } = stageMetrics();
+    const width = diskWidth(disk, lane);
+    el.style.width = `${width}px`;
+    el.style.left = `${centers[rod] - width / 2}px`;
+    el.style.bottom = `${BASE_BOTTOM + level * DISK_HEIGHT}px`;
+    if (!transition) el.style.transition = 'none';
+  }
+
+  function buildStage() {
+    stage.querySelectorAll('.rod, .base, .rod-label, .disk').forEach(el => el.remove());
+    diskElements = {};
+    const { lane, centers } = stageMetrics();
+    rodNames.forEach((name, index) => {
+      const rod = document.createElement('div');
+      rod.className = 'rod';
+      rod.style.left = `${centers[index]}px`;
+      stage.appendChild(rod);
+      const base = document.createElement('div');
+      base.className = 'base';
+      base.style.left = `${centers[index]}px`;
+      base.style.width = `${lane * .83}px`;
+      stage.appendChild(base);
+      const label = document.createElement('div');
+      label.className = 'rod-label';
+      label.style.left = `${centers[index]}px`;
+      label.textContent = `ROD ${name}`;
+      stage.appendChild(label);
+    });
+    for (let disk = 1; disk <= diskCount; disk++) {
+      const el = document.createElement('div');
+      el.className = `disk disk-${disk}`;
+      el.textContent = disk;
+      el.setAttribute('aria-label', `Disk ${disk}`);
+      stage.appendChild(el);
+      diskElements[disk] = el;
+    }
+    renderPositions(false);
+  }
+
+  function renderPositions(transition = false) {
+    rods.forEach((stack, rodIndex) => {
+      stack.forEach((disk, level) => placeDisk(diskElements[disk], disk, rodIndex, level, transition));
+    });
+  }
+
+  function renderHistory() {
+    const history = document.getElementById('history');
+    const count = document.getElementById('historyCount');
+    history.innerHTML = '';
+    const start = Math.max(0, currentMove - 5);
+    const visible = moves.slice(start, currentMove);
+    count.textContent = `${currentMove} recorded`;
+    if (!visible.length) {
+      history.innerHTML = '<div class="empty-history">No moves yet. Press Play or Next move.</div>';
+      return;
+    }
+    visible.slice().reverse().forEach((move, offset) => {
+      const moveNo = start + visible.length - offset;
+      const row = document.createElement('div');
+      row.className = 'history-row';
+      row.innerHTML = `<span class="history-num">${moveNo}</span><span><strong>Disk ${move.disk}</strong> · ${rodNames[move.from]} → ${rodNames[move.to]}</span>`;
+      history.appendChild(row);
+    });
+  }
+
+  function setStatus(text, done = false) {
+    document.getElementById('statusText').textContent = text;
+    const pill = document.getElementById('statusPill');
+    pill.style.color = done ? '#15765f' : '';
+    pill.style.background = done ? '#e9f8f2' : '';
+  }
+
+  function updateUI() {
+    const total = moves.length;
+    document.getElementById('metricDisks').textContent = diskCount;
+    document.getElementById('metricMoves').textContent = currentMove;
+    document.getElementById('metricMinimum').textContent = total;
+    document.getElementById('progressText').textContent = `${currentMove} / ${total} moves`;
+    document.getElementById('progressFill').style.width = `${total ? currentMove / total * 100 : 0}%`;
+    const next = moves[currentMove];
+    const eyebrow = document.getElementById('moveEyebrow');
+    const nextMove = document.getElementById('nextMove');
+    const detail = document.getElementById('nextDetail');
+    if (currentMove >= total) {
+      eyebrow.textContent = 'COMPLETED';
+      nextMove.textContent = 'Puzzle solved!';
+      detail.textContent = `All ${diskCount} disk${diskCount === 1 ? '' : 's'} reached rod C in ${total} move${total === 1 ? '' : 's'}. This is the minimum possible number.`;
+      setStatus('Solved', true);
+    } else {
+      eyebrow.textContent = currentMove === 0 ? 'UP NEXT' : 'NEXT MOVE';
+      nextMove.textContent = `Disk ${next.disk}: ${rodNames[next.from]} → ${rodNames[next.to]}`;
+      detail.textContent = `Move ${currentMove + 1} of ${total}. Only the top disk can be moved, and a larger disk must never sit on a smaller disk.`;
+      if (!isPlaying && !isAnimating) setStatus(currentMove === 0 ? 'Ready to start' : 'Paused');
+    }
+    playBtn.textContent = isPlaying ? 'Ⅱ Pause' : '▶ Play';
+    playBtn.disabled = (isAnimating && !isPlaying) || (currentMove >= total && !isPlaying);
+    stepBtn.disabled = isAnimating || isPlaying || currentMove >= total;
+    undoBtn.disabled = isAnimating || isPlaying || currentMove <= 0;
+    resetBtn.disabled = isAnimating || isPlaying || currentMove === 0;
+    newGameBtn.disabled = isAnimating || isPlaying;
+    diskSelect.disabled = isAnimating || isPlaying;
+    renderHistory();
+  }
+
+  async function animateNext() {
+    if (isAnimating || currentMove >= moves.length) return;
+    isAnimating = true;
+    updateUI();
+    const move = moves[currentMove];
+    const disk = rods[move.from].pop();
+    if (disk !== move.disk) {
+      rods = stateAt(currentMove);
+      isAnimating = false;
+      renderPositions(false);
+      updateUI();
+      return;
+    }
+    const el = diskElements[disk];
+    const { lane, centers } = stageMetrics();
+    const width = diskWidth(disk, lane);
+    const destinationLevel = rods[move.to].length;
+    const duration = animationDuration();
+    el.style.zIndex = '30';
+    el.style.transition = `left ${duration}ms cubic-bezier(.2,.75,.25,1), bottom ${duration}ms cubic-bezier(.2,.75,.25,1)`;
+    el.style.bottom = `${BASE_BOTTOM + diskCount * DISK_HEIGHT + 24}px`;
+    await sleep(duration + 25);
+    el.style.left = `${centers[move.to] - width / 2}px`;
+    await sleep(duration + 25);
+    el.style.bottom = `${BASE_BOTTOM + destinationLevel * DISK_HEIGHT}px`;
+    await sleep(duration + 25);
+    rods[move.to].push(disk);
+    currentMove++;
+    el.style.zIndex = '';
+    isAnimating = false;
+    updateUI();
+  }
+
+  async function togglePlay() {
+    if (isPlaying) {
+      isPlaying = false;
+      playSession++;
+      updateUI();
+      return;
+    }
+    if (isAnimating || currentMove >= moves.length) return;
+    isPlaying = true;
+    const session = ++playSession;
+    updateUI();
+    setStatus('Playing');
+    while (isPlaying && session === playSession && currentMove < moves.length) {
+      await animateNext();
+      if (isPlaying && session === playSession && currentMove < moves.length) {
+        await sleep(Math.max(50, 180 / Number(speedRange.value)));
+      }
+    }
+    if (session === playSession) {
+      isPlaying = false;
+      updateUI();
+    }
+  }
+
+  function restartGame(newCount = diskCount) {
+    if (isAnimating) return;
+    isPlaying = false;
+    playSession++;
+    diskCount = newCount;
+    moves = makeMoves(diskCount);
+    currentMove = 0;
+    rods = initialRods(diskCount);
+    buildStage();
+    updateUI();
+  }
+
+  playBtn.addEventListener('click', togglePlay);
+  stepBtn.addEventListener('click', async () => {
+    if (!isAnimating && !isPlaying) await animateNext();
+  });
+  undoBtn.addEventListener('click', () => {
+    if (isAnimating || isPlaying || currentMove <= 0) return;
+    currentMove--;
+    rods = stateAt(currentMove);
+    renderPositions(false);
+    updateUI();
+  });
+  resetBtn.addEventListener('click', () => restartGame(diskCount));
+  newGameBtn.addEventListener('click', () => restartGame(Number(diskSelect.value)));
+  speedRange.addEventListener('input', () => { speedValue.textContent = `${speedRange.value}×`; });
+  window.addEventListener('resize', () => { if (!isAnimating) { buildStage(); } });
+
+  restartGame(3);
+})();
+</script>
+</body>
+</html>
